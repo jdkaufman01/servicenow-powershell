@@ -1,4 +1,4 @@
-function Get-ServiceNowChangeRequest {
+﻿function Get-ServiceNowGroups{
     param(
         # Machine name of the field to order by
         [parameter(mandatory=$false)]
@@ -44,37 +44,46 @@ function Get-ServiceNowChangeRequest {
         [ValidateSet("true","false", "all")]
         [string]$DisplayValues='true',
 
+        # Credential used to authenticate to ServiceNow  
         [Parameter(ParameterSetName='SpecifyConnectionFields', Mandatory=$True)]
         [ValidateNotNullOrEmpty()]
         [PSCredential]
         $ServiceNowCredential, 
 
+        # The URL for the ServiceNow instance being used  
         [Parameter(ParameterSetName='SpecifyConnectionFields', Mandatory=$True)]
         [ValidateNotNullOrEmpty()]
         [string]
         $ServiceNowURL, 
 
+        #Azure Automation Connection object containing username, password, and URL for the ServiceNow instance
         [Parameter(ParameterSetName='UseConnectionObject', Mandatory=$True)] 
         [ValidateNotNullOrEmpty()]
         [Hashtable]
         $Connection
     )
-    
-    $private:Query = New-ServiceNowQuery -OrderBy $private:OrderBy -OrderDirection $private:OrderDirection -MatchExact $private:MatchExact -MatchContains $private:MatchContains
-    
 
-    if ($Connection -ne $null) {
-        $private:result = Get-ServiceNowTable -Table 'change_request' -Query $private:Query -Limit $private:Limit -DisplayValues $private:DisplayValues -Connection $Connection
+    $Query = New-ServiceNowQuery -OrderBy $OrderBy -OrderDirection $OrderDirection -MatchExact $MatchExact -MatchContains $MatchContains
+    
+    if ($Connection -ne $null)
+    {     
+        $result = Get-ServiceNowTable -Table 'sys_user_group' -Query $Query -Limit $Limit -DisplayValues $DisplayValues -Connection $Connection 
     }
-    elseif ($ServiceNowCredential -ne $null -and $ServiceNowURL -ne $null) {
-        $private:result = Get-ServiceNowTable -Table 'change_request' -Query $private:Query -Limit $private:Limit -DisplayValues $private:DisplayValues -ServiceNowCredential $ServiceNowCredential -ServiceNowURL $ServiceNowURL 
+    elseif ($ServiceNowCredential -ne $null -and $ServiceNowURL -ne $null) 
+    {
+        $result = Get-ServiceNowTable -Table 'sys_user_group' -Query $Query -Limit $Limit -DisplayValues $DisplayValues -ServiceNowCredential $ServiceNowCredential -ServiceNowURL $ServiceNowURL 
     }
-    else {
-        $private:result = Get-ServiceNowTable -Table 'change_request' -Query $private:Query -Limit $private:Limit -DisplayValues $private:DisplayValues 
+    else 
+    {
+        $result = Get-ServiceNowTable -Table 'sys_user_group' -Query $Query -Limit $Limit -DisplayValues $DisplayValues
     }
 
-    # Add the custom type to the change request to enable a view
-    $private:result | %{$_.psobject.TypeNames.Insert(0, "PSServiceNow.ChangeRequest")}
-    return $private:result
+    # Set the default property set for the table view
+    $DefaultProperties = @('name', 'sys_created_on', 'description')
+    $DefaultDisplayPropertySet = New-Object System.Management.Automation.PSPropertySet(‘DefaultDisplayPropertySet’,[string[]]$DefaultProperties)
+    $PSStandardMembers = [System.Management.Automation.PSMemberInfo[]]@($DefaultDisplayPropertySet)
+    $Result | Add-Member MemberSet PSStandardMembers $PSStandardMembers
+
+    # Return that result!
+    return $result
 }
-

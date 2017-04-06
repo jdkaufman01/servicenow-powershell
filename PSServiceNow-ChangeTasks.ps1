@@ -1,4 +1,4 @@
-function Get-ServiceNowChangeRequest {
+﻿function Get-ServiceNowChangeTask {
     param(
         # Machine name of the field to order by
         [parameter(mandatory=$false)]
@@ -77,4 +77,3 @@ function Get-ServiceNowChangeRequest {
     $private:result | %{$_.psobject.TypeNames.Insert(0, "PSServiceNow.ChangeRequest")}
     return $private:result
 }
-
